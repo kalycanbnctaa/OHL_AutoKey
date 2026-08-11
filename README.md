@@ -492,12 +492,12 @@ Semua test dijalankan dengan kamus sementara (`tmp_path` fixture) untuk isolasi 
 
 | Fitur | Screenshot |
 |---|---|
-| Statistik Trie + Autocomplete | `screenshots/autocomplete.jpg` |
-| Spell Check + saran koreksi | `screenshots/spellcheck.jpg` |
-| Hasil Check All | `screenshots/check-all.jpg` |
-| Word Segmentation + dp[] + trace-back | `screenshots/segmentation.jpg` |
-| Smart Trim + tabel Knapsack | `screenshots/smart-trim.jpg` |
-| Bigram toggle + reranking | `screenshots/bigram.jpg` |
+| Statistik Trie + Autocomplete | ![Autocomplete](screenshots/autocomplete.jpg) |
+| Spell Check + saran koreksi | ![Spell Check](screenshots/spellcheck.jpg) |
+| Hasil Check All | ![Check All](screenshots/check-all.jpg) |
+| Word Segmentation + dp[] + trace-back | ![Segmentation](screenshots/segmentation.jpg) |
+| Smart Trim + tabel Knapsack | ![Smart Trim](screenshots/smart-trim.jpg) |
+| Bigram toggle + reranking | ![Bigram](screenshots/bigram.jpg) |
 
 ---
 
