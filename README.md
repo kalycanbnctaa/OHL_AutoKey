@@ -502,8 +502,7 @@ Semua test dijalankan dengan kamus sementara (`tmp_path` fixture) untuk isolasi 
 ---
 
 ## Tautan Video Demo
-
-**Link:** _TBD_
+**Link:** https://drive.google.com/file/d/1Nhn3umLPM1vphHQ2kiodNQcqyYzZ9DNX/view?usp=sharing 
 
 ---
 
