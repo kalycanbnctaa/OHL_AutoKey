@@ -30,13 +30,19 @@ async function request<T>(
 }
 
 export const api = {
-  get: <T>(path: string, signal?: AbortSignal) =>
-    request<T>(path, { method: "GET", signal }),
-  post: <T>(path: string, body: unknown, signal?: AbortSignal) =>
+  get: <T>(path: string, signal?: AbortSignal, headers?: HeadersInit) =>
+    request<T>(path, { method: "GET", signal, headers }),
+  post: <T>(
+    path: string,
+    body: unknown,
+    signal?: AbortSignal,
+    headers?: HeadersInit,
+  ) =>
     request<T>(path, {
       method: "POST",
       body: JSON.stringify(body),
       signal,
+      headers,
     }),
 };
 

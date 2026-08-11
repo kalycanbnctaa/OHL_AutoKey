@@ -1,5 +1,5 @@
 type DPTableProps = {
-  dp: number[];
+  dp: (number | null)[];
   choices: number[];
   words: string[];
   text: string;
@@ -18,11 +18,12 @@ export default function DPTable({ dp, choices, words, text }: DPTableProps) {
             className={[
               "dp-cell flex flex-col items-center px-3 py-1 bg-white rounded-lg border border-[#dce8e4] min-w-[44px]",
               i === dp.length - 1 ? "border-[#397f70] bg-[#dff0eb]" : "",
+              val === null ? "opacity-50" : "",
             ].join(" ")}
           >
             <span className="dp-index text-[10px] text-[#66746f]">{i}</span>
             <span className="dp-value font-semibold text-sm text-[#17231f]">
-              {val.toFixed(2)}
+              {val === null ? "∞" : val.toFixed(2)}
             </span>
           </div>
         ))}

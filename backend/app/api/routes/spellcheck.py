@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Body, Query, Request
+from fastapi import APIRouter, Body, HTTPException, Query, Request
 
 from app.api.schemas.spellcheck import (
     LevenshteinTableResponse,
@@ -13,15 +13,13 @@ from app.services.spellcheck_service import SpellCheckService
 
 router = APIRouter(tags=["spellcheck"])
 
-
 def _get_spellcheck_service(request: Request) -> SpellCheckService:
     dictionary_service = getattr(request.app.state, "dictionary_service", None)
 
     if dictionary_service is None or not dictionary_service.is_loaded:
-        raise RuntimeError("Dictionary service is not loaded")
+        raise HTTPException(503, "Dictionary service is not loaded")
 
     return SpellCheckService(dictionary_service)
-
 
 @router.get("/spellcheck/word", response_model=SpellCheckWordResponse)
 async def check_word(
@@ -56,7 +54,6 @@ async def check_word(
         suggestions=suggestions,
     )
 
-
 @router.post("/spellcheck/check-text", response_model=SpellCheckTextResponse)
 async def check_text(
     request: Request,
@@ -89,7 +86,6 @@ async def check_text(
         ],
         issue_count=len(issues),
     )
-
 
 @router.get("/levenshtein/table", response_model=LevenshteinTableResponse)
 async def levenshtein_table(

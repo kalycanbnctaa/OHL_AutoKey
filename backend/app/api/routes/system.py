@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, HTTPException, Request
 
 from app.api.schemas.statistics import TrieStatisticsResponse
 from app.utils.statistics import (
@@ -8,7 +8,6 @@ from app.utils.statistics import (
 )
 
 router = APIRouter(tags=["system"])
-
 
 @router.get(
     "/statistics",
@@ -22,7 +21,7 @@ async def statistics(request: Request) -> TrieStatisticsResponse:
     )
 
     if dictionary_service is None or not dictionary_service.is_loaded:
-        raise RuntimeError("Dictionary service is not loaded")
+        raise HTTPException(503, "Dictionary service is not loaded")
 
     trie = dictionary_service.trie
 

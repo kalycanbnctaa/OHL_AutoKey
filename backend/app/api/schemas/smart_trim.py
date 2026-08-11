@@ -2,7 +2,7 @@ from pydantic import BaseModel, Field
 
 class SmartTrimRequest(BaseModel):
     text: str = Field(..., min_length=1, max_length=10000)
-    limit: int = Field(..., ge=1)
+    limit: int = Field(..., ge=1, le=5000)
 
 class SmartTrimItemResponse(BaseModel):
     word: str

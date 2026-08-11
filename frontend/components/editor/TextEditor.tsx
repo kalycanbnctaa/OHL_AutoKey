@@ -1,22 +1,31 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { KeyboardEvent } from "react";
+import type { KeyboardEvent, MouseEvent } from "react";
 
 import { useAutocomplete } from "../../hooks/useAutocomplete";
 import { useEditor } from "../../hooks/useEditor";
 import { useSpellcheck, type MisspelledWord } from "../../hooks/useSpellcheck";
-import { useBigram } from "../../hooks/useBigram";
 import { checkWord } from "../../services/spellcheck";
 import AutocompleteDropdown from "./AutocompleteDropdown";
 import SpellSuggestion from "./SpellSuggestion";
 import IssueList from "./IssueList";
 import { checkText } from "../../services/spellcheck";
 import type { SpellCheckIssueResponse } from "../../types/spellcheck";
+import type { RerankItem } from "../../types/bigram";
 import Button from "../common/Button";
 import Badge from "../common/Badge";
 
 const WORD_BOUNDARY_REGEX = /[^a-zA-Z0-9\u00C0-\u024F'-]/;
+
+type TextEditorProps = {
+  bigramEnabled: boolean;
+  recordPair: (prev: string, curr: string) => Promise<void>;
+  rerankSuggestions: (
+    prev: string,
+    candidates: [string, number][],
+  ) => Promise<RerankItem[]>;
+};
 
 function getWordAtOffset(text: string, offset: number): {
   word: string;
@@ -43,8 +52,18 @@ function escapeHtml(str: string): string {
     .replace(/>/g, "&gt;");
 }
 
-export default function TextEditor() {
-  const { editorRef, getCaretWordInfo, replaceCurrentWord } = useEditor();
+export default function TextEditor({
+  bigramEnabled,
+  recordPair,
+  rerankSuggestions,
+}: TextEditorProps) {
+  const {
+    editorRef,
+    getCaretWordInfo,
+    replaceCurrentWord,
+    getCaretOffset,
+    setCaretOffset,
+  } = useEditor();
   const {
     misspelled,
     setMisspelled,
@@ -56,14 +75,8 @@ export default function TextEditor() {
     closeSuggestions,
   } = useSpellcheck();
 
-  const {
-    enabled: bigramEnabled,
-    recordPair,
-    rerankSuggestions,
-  } = useBigram();
-
   const [lastWord, setLastWord] = useState<string>("");
-  const [caretPosition, setCaretPosition] = useState<{ top: number; left: number; direction: "down" | "up" } | null>(null);
+  const [caretPosition, setCaretPositionState] = useState<{ top: number; left: number; direction: "down" | "up" } | null>(null);
   const [allIssues, setAllIssues] = useState<SpellCheckIssueResponse[]>([]);
   const [isCheckingAll, setIsCheckingAll] = useState(false);
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -98,7 +111,7 @@ export default function TextEditor() {
     const spaceAbove = rect.top;
     const direction = spaceBelow < dropdownHeight && spaceAbove > dropdownHeight ? "up" : "down";
 
-    setCaretPosition({
+    setCaretPositionState({
       top: direction === "down"
         ? rect.bottom - containerRect.top + 6
         : rect.top - containerRect.top - dropdownHeight - 6,
@@ -118,6 +131,28 @@ export default function TextEditor() {
     },
     [bigramEnabled, recordPair]
   );
+
+  const handleCheckAll = useCallback(async () => {
+    const text = editorRef.current?.textContent || "";
+    if (!text.trim()) {
+      setAllIssues([]);
+      return;
+    }
+
+    setIsCheckingAll(true);
+    try {
+      const response = await checkText(text, 2, 5);
+      setAllIssues(response.issues);
+      clearAll();
+      for (const issue of response.issues) {
+        validateWord(issue.word, issue.start, issue.end);
+      }
+    } catch {
+      setAllIssues([]);
+    } finally {
+      setIsCheckingAll(false);
+    }
+  }, [editorRef, clearAll, validateWord]);
 
   const handleInput = useCallback(async () => {
     const wordInfo = getCaretWordInfo();
@@ -160,14 +195,26 @@ export default function TextEditor() {
   ]);
 
   const selectSuggestion = useCallback(
-    (word: string) => {
+    async (word: string) => {
       const wordInfo = getCaretWordInfo();
       if (!wordInfo) return;
       replaceCurrentWord(wordInfo.wordStart, wordInfo.wordEnd, word);
+      if (bigramEnabled && lastWord) {
+        await recordPair(lastWord, word);
+      }
+      setLastWord(word);
       clear();
       editorRef.current?.focus();
     },
-    [getCaretWordInfo, replaceCurrentWord, clear, editorRef]
+    [
+      getCaretWordInfo,
+      replaceCurrentWord,
+      clear,
+      editorRef,
+      bigramEnabled,
+      lastWord,
+      recordPair,
+    ]
   );
 
   const handleSpellSelect = useCallback(
@@ -186,6 +233,16 @@ export default function TextEditor() {
       closeSuggestions();
     },
     [replaceCurrentWord, bigramEnabled, lastWord, recordPair, setMisspelled, closeSuggestions]
+  );
+
+  const handleAddToDictionary = useCallback(
+    async (word: string, start: number, end: number) => {
+      await addToDictionary(word, start, end);
+      setAllIssues((prev: SpellCheckIssueResponse[]) =>
+        prev.filter((i) => i.start !== start || i.end !== end)
+      );
+    },
+    [addToDictionary]
   );
 
   const handleKeyDown = useCallback(
@@ -232,7 +289,7 @@ export default function TextEditor() {
         }
       }
 
-      if (event.key === "Space" && isOpen) {
+      if (event.key === " " && isOpen) {
         clear();
       }
     },
@@ -245,6 +302,7 @@ export default function TextEditor() {
       clear,
       activeSuggestion,
       closeSuggestions,
+      handleCheckAll,
     ]
   );
 
@@ -258,7 +316,7 @@ export default function TextEditor() {
   }, [handleInput]);
 
   const handleClick = useCallback(
-    (e: React.MouseEvent) => {
+    (e: MouseEvent) => {
       const target = e.target as HTMLElement;
       const misspelledSpan = target.closest(".misspelled");
       if (misspelledSpan) {
@@ -312,6 +370,9 @@ export default function TextEditor() {
       return;
     }
 
+    const hadFocus = document.activeElement === editor;
+    const caretOffset = hadFocus ? getCaretOffset() : null;
+
     let html = "";
     let lastIndex = 0;
     const sorted = [...misspelled].sort((a, b) => a.start - b.start);
@@ -329,67 +390,14 @@ export default function TextEditor() {
 
     editor.innerHTML = html;
 
-    const sel = window.getSelection();
-    if (sel && sel.rangeCount > 0) {
-      const range = sel.getRangeAt(0);
-      try {
-        const textNodes = editor.querySelectorAll("span, .misspelled");
-        let totalLength = 0;
-        let targetNode: Node | null = null;
-        let targetOffset = 0;
-
-        for (const node of textNodes) {
-          const nodeText = node.textContent || "";
-          if (totalLength + nodeText.length >= range.startOffset) {
-            targetNode = node.firstChild || node;
-            targetOffset = range.startOffset - totalLength;
-            break;
-          }
-          totalLength += nodeText.length;
-        }
-
-        if (targetNode) {
-          const newRange = document.createRange();
-          newRange.setStart(targetNode, Math.min(targetOffset, targetNode.textContent?.length || 0));
-          newRange.collapse(true);
-          sel.removeAllRanges();
-          sel.addRange(newRange);
-        }
-      } catch {
-        const newRange = document.createRange();
-        newRange.selectNodeContents(editor);
-        newRange.collapse(false);
-        sel.removeAllRanges();
-        sel.addRange(newRange);
-      }
+    if (hadFocus && caretOffset !== null) {
+      setCaretOffset(caretOffset);
     }
-  }, [misspelled, editorRef]);
+  }, [misspelled, editorRef, getCaretOffset, setCaretOffset]);
 
   useEffect(() => {
     renderTextWithMarkup();
   }, [misspelled, renderTextWithMarkup]);
-
-  const handleCheckAll = useCallback(async () => {
-    const text = editorRef.current?.textContent || "";
-    if (!text.trim()) {
-      setAllIssues([]);
-      return;
-    }
-
-    setIsCheckingAll(true);
-    try {
-      const response = await checkText(text, 2, 5);
-      setAllIssues(response.issues);
-      clearAll();
-      for (const issue of response.issues) {
-        validateWord(issue.word, issue.start, issue.end);
-      }
-    } catch {
-      setAllIssues([]);
-    } finally {
-      setIsCheckingAll(false);
-    }
-  }, [editorRef, clearAll, validateWord]);
 
   const applySuggestionFromIssue = useCallback(
     async (word: string, start: number, end: number) => {
@@ -452,7 +460,7 @@ export default function TextEditor() {
             handleSpellSelect(word, activeSuggestion.start, activeSuggestion.end)
           }
           onAdd={() =>
-            addToDictionary(activeSuggestion.word, activeSuggestion.start, activeSuggestion.end)
+            handleAddToDictionary(activeSuggestion.word, activeSuggestion.start, activeSuggestion.end)
           }
           onClose={closeSuggestions}
         />

@@ -1,6 +1,6 @@
 import time
 
-from fastapi import APIRouter, Query, Request
+from fastapi import APIRouter, HTTPException, Query, Request
 
 from app.api.schemas.autocomplete import (
     AutocompleteResponse,
@@ -9,7 +9,6 @@ from app.api.schemas.autocomplete import (
 from app.services.autocomplete_service import AutocompleteService
 
 router = APIRouter(tags=["autocomplete"])
-
 
 @router.get("/autocomplete", response_model=AutocompleteResponse)
 async def autocomplete(
@@ -22,7 +21,7 @@ async def autocomplete(
     )
 
     if dictionary_service is None or not dictionary_service.is_loaded:
-        raise RuntimeError("Dictionary service is not loaded")
+        raise HTTPException(503, "Dictionary service is not loaded")
 
     service = AutocompleteService(dictionary_service)
 

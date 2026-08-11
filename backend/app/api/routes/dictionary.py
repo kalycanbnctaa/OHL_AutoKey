@@ -10,7 +10,7 @@ class AddWordRequest(BaseModel):
 async def add_word(request: Request, payload: AddWordRequest) -> dict:
     dictionary_service = getattr(request.app.state, "dictionary_service", None)
     if dictionary_service is None or not dictionary_service.is_loaded:
-        raise RuntimeError("Dictionary service is not loaded")
+        raise HTTPException(503, "Dictionary service is not loaded")
 
     dictionary_service.add_word(payload.word, frequency=1)
 

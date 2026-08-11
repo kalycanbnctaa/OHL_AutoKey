@@ -8,7 +8,7 @@ router = APIRouter(tags=["smart_trim"])
 async def smart_trim(request: Request, payload: SmartTrimRequest) -> SmartTrimResponse:
     dictionary_service = getattr(request.app.state, "dictionary_service", None)
     if dictionary_service is None or not dictionary_service.is_loaded:
-        raise HTTPException(503, "Dictionary service not loaded")
+        raise HTTPException(503, "Dictionary service is not loaded")
 
     service = SmartTrimService(dictionary_service)
     result = service.trim(payload.text, payload.limit)

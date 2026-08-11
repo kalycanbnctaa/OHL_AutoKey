@@ -42,6 +42,9 @@ class SpellCheckService:
         if not normalized:
             return False
 
+        if normalized.isdigit():
+            return True
+
         return self.dictionary_service.search(normalized) is not None
 
     def find_words_within_distance(

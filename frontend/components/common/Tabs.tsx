@@ -1,16 +1,17 @@
 "use client";
 
 import { useState } from "react";
+import type { ReactNode } from "react";
 
 type Tab = {
   id: string;
   label: string;
-  icon?: React.ReactNode;
+  icon?: ReactNode;
 };
 
 type TabsProps = {
   tabs: Tab[];
-  children: React.ReactNode[];
+  children: ReactNode[];
   defaultTab?: string;
   onTabChange?: (tabId: string) => void;
 };

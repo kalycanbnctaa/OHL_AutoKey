@@ -10,7 +10,7 @@ router = APIRouter(tags=["segmentation"])
 async def segment(request: Request, payload: SegmentRequest) -> SegmentResponse:
     dictionary_service = getattr(request.app.state, "dictionary_service", None)
     if dictionary_service is None or not dictionary_service.is_loaded:
-        raise HTTPException(503, "Dictionary service not loaded")
+        raise HTTPException(503, "Dictionary service is not loaded")
 
     service = SegmentationService(dictionary_service)
     result = service.segment(payload.text)

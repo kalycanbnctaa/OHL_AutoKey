@@ -3,15 +3,18 @@
 import { useSmartTrim } from "../../hooks/useSmartTrim";
 import Button from "../common/Button";
 import Loading from "../common/Loading";
+import KnapsackTable from "../dp/KnapsackTable";
 
 export default function SmartTrimPanel() {
-  const { text, setText, limit, setLimit, result, loading, error, trim } = useSmartTrim();
+  const { text, setText, limit, setLimit, result, loading, error, trim } =
+    useSmartTrim();
 
   return (
     <div className="smart-trim-panel p-6 border border-[#dce8e4] rounded-2xl bg-white">
       <h3 className="text-lg font-semibold text-[#17231f] mb-2">Smart Trim</h3>
       <p className="text-sm text-[#66746f] mb-4">
-        Pilih subset kata yang memaksimalkan nilai tanpa melebihi batas karakter (0/1 Knapsack).
+        Pilih subset kata yang memaksimalkan nilai tanpa melebihi batas karakter
+        (0/1 Knapsack).
       </p>
 
       <div className="space-y-3 mb-4">
@@ -85,8 +88,18 @@ export default function SmartTrimPanel() {
 
           {result.items.length === 0 && (
             <p className="text-sm text-[#66746f]">
-              Tidak ada kata yang dapat dipertahankan dalam batas {result.limit} karakter.
+              Tidak ada kata yang dapat dipertahankan dalam batas {result.limit}{" "}
+              karakter.
             </p>
+          )}
+
+          {/* Tampilkan tabel DP jika ada */}
+          {result.dp_table && result.dp_table.length > 0 && (
+            <KnapsackTable
+              dpTable={result.dp_table}
+              items={text.split(/\s+/).filter(Boolean)}
+              capacity={result.limit}
+            />
           )}
         </div>
       )}

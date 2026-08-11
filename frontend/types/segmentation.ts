@@ -4,7 +4,7 @@ export type SegmentRequest = {
 
 export type SegmentResponse = {
   text: string;
-  dp: number[];
+  dp: (number | null)[];
   choices: number[];
   words: string[];
   result: string;

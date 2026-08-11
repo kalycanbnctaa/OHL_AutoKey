@@ -124,3 +124,14 @@ def test_segment_text_choice_traceback(dictionary_service):
         i = j
     words.reverse()
     assert words == result.words
+
+def test_segment_text_word_with_zero_frequency_is_still_valid() -> None:
+    word_freq = {"program": 0, "dinamis": 500}
+    total_freq = 500
+
+    from app.core.segmentation import segment_text
+
+    result = segment_text("programdinamis", word_freq, total_freq)
+
+    assert result is not None
+    assert result.words == ["program", "dinamis"]

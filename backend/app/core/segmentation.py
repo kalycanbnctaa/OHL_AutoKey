@@ -29,9 +29,10 @@ def segment_text(
         for j in range(i):
             substring = text[j:i]
             freq = word_freq.get(substring)
-            if freq is None or freq <= 0:
+            if freq is None:
                 continue
-            cost = math.log(total_frequency / freq)
+            effective_freq = max(freq, 1)
+            cost = math.log(total_frequency / effective_freq)
             if dp[j] + cost < dp[i]:
                 dp[i] = dp[j] + cost
                 choice[i] = j

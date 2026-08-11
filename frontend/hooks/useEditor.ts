@@ -115,5 +115,11 @@ export function useEditor() {
     [setCaretOffset],
   );
 
-  return { editorRef, getCaretWordInfo, replaceCurrentWord };
+  return {
+    editorRef,
+    getCaretWordInfo,
+    replaceCurrentWord,
+    getCaretOffset,
+    setCaretOffset,
+  };
 }

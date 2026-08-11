@@ -1,12 +1,20 @@
 "use client";
 
-import { useBigram } from "../../hooks/useBigram";
 import Toggle from "../common/Toggle";
 import Badge from "../common/Badge";
+import type { StatisticsResponse } from "../../types/bigram";
 
-export default function BigramPanel() {
-  const { enabled, setEnabled, statistics } = useBigram();
+type BigramPanelProps = {
+  enabled: boolean;
+  setEnabled: (enabled: boolean) => void;
+  statistics: StatisticsResponse;
+};
 
+export default function BigramPanel({
+  enabled,
+  setEnabled,
+  statistics,
+}: BigramPanelProps) {
   return (
     <div className="bigram-panel p-6 border border-[#dce8e4] rounded-2xl bg-white">
       <div className="flex items-center justify-between flex-wrap gap-3 mb-2">

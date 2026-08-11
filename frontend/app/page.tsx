@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import Header from "../components/layout/Header";
 import SummaryPanel from "../components/layout/SummaryPanel";
@@ -12,6 +12,7 @@ import LevenshteinPanel from "../components/features/LevenshteinPanel";
 import BigramPanel from "../components/features/BigramPanel";
 import Loading from "../components/common/Loading";
 import Button from "../components/common/Button";
+import { useBigram } from "../hooks/useBigram";
 
 type TrieStatistics = {
   word_count: number;
@@ -25,46 +26,51 @@ type BackendStatus = "checking" | "connected" | "disconnected";
 
 export default function Home() {
   const [statistics, setStatistics] = useState<TrieStatistics | null>(null);
-  const [backendStatus, setBackendStatus] = useState<BackendStatus>("checking");
+  const [backendStatus, setBackendStatus] =
+    useState<BackendStatus>("checking");
   const [retryCount, setRetryCount] = useState(0);
 
-  const loadStatistics = async () => {
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+  const bigram = useBigram();
+
+  useEffect(() => {
+    const apiUrl =
+      process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
     const controller = new AbortController();
 
-    try {
-      const response = await fetch(`${apiUrl}/statistics`, {
-        signal: controller.signal,
-        cache: "no-store",
-      });
+    const loadStatistics = async () => {
+      try {
+        const response = await fetch(`${apiUrl}/statistics`, {
+          signal: controller.signal,
+          cache: "no-store",
+        });
 
-      if (!response.ok) {
-        throw new Error("Unable to load statistics");
-      }
+        if (!response.ok) {
+          throw new Error("Unable to load statistics");
+        }
 
-      const data = (await response.json()) as TrieStatistics;
-      setStatistics(data);
-      setBackendStatus("connected");
-    } catch (error) {
-      if (error instanceof DOMException && error.name === "AbortError") {
-        return;
+        const data = (await response.json()) as TrieStatistics;
+        setStatistics(data);
+        setBackendStatus("connected");
+      } catch (error) {
+        if (error instanceof DOMException && error.name === "AbortError") {
+          return;
+        }
+
+        setStatistics(null);
+        setBackendStatus("disconnected");
       }
-      setStatistics(null);
-      setBackendStatus("disconnected");
-    }
+    };
+
+    void loadStatistics();
 
     return () => {
       controller.abort();
     };
-  };
-
-  useEffect(() => {
-    loadStatistics();
   }, [retryCount]);
 
-  const handleRetry = () => {
+  const handleRetry = useCallback(() => {
     setRetryCount((prev) => prev + 1);
-  };
+  }, []);
 
   return (
     <>
@@ -98,17 +104,24 @@ export default function Home() {
 
           <div className="mt-6">
             <MainLayout>
-              <TextEditor />
+              <TextEditor
+                bigramEnabled={bigram.enabled}
+                recordPair={bigram.recordPair}
+                rerankSuggestions={bigram.rerankSuggestions}
+              />
               <AutoSpacePanel />
               <SmartTrimPanel />
               <LevenshteinPanel />
-              <BigramPanel />
+              <BigramPanel
+                enabled={bigram.enabled}
+                setEnabled={bigram.setEnabled}
+                statistics={bigram.statistics}
+              />
             </MainLayout>
           </div>
 
           <footer className="footer">
             <span>AutoKey</span>
-            <span>Sprint 8 · Full Integration</span>
           </footer>
         </>
       )}
